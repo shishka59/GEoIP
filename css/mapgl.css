@@ -1,0 +1,23 @@
+/* Стили для 2GIS MapGL */
+.mapgl-popup {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.mapgl-popup-content-wrapper {
+    padding: 1rem;
+    max-width: 200px;
+}
+
+.mapgl-marker {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.mapgl-control {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mapgl-control:hover {
+    background: rgba(255, 255, 255, 1);
+}

@@ -1,11 +1,193 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Ge0_IP</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="IP Locator Pro - определение провайдера и точных координат по IP адресу">
+    <title>IP Locator Pro (Local)</title>
+    
+    <!-- Полностью локальные стили -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/tailwind-full.css">
+    <link rel="stylesheet" href="css/mapgl.css">
 </head>
-<body>
+<body class="text-slate-900 min-h-screen pb-10">
 
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex flex-col items-center text-center mb-10">
+        <h1 class="text-4xl font-extrabold text-green-900 mb-2 tracking-tight">IP Локатор</h1>
+        <p class="text-green-700/70 font-medium">Определение провайдера и точных координат</p>
+    </div>
+
+    <div class="bg-white rounded-[2.5rem] p-4 md:p-6 custom-shadow border border-green-100 mb-8">
+        <div class="flex flex-col md:flex-row gap-3">
+            <div class="relative flex-grow">
+                <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
+                    <svg data-lucide="search" class="text-green-500 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <label for="ipInput" class="sr-only">IP адрес</label>
+                <input type="text" id="ipInput" placeholder="Введите IP (например: 8.8.8.8)"
+                       class="block w-full pl-16 pr-4 py-5 bg-green-50/50 border-none rounded-3xl focus:ring-2 focus:ring-green-500 transition-all text-lg font-semibold placeholder-gray-400">
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="lookupIP()" id="searchBtn"
+                        class="flex-grow md:flex-none bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-5 rounded-3xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-200 active:scale-95 min-w-[140px]">
+                    <span>Найти</span>
+                    <span data-lucide="arrow-right" class="w-5 h-5 flex-shrink-0"></span>
+                </button>
+                <button onclick="detectMyIP()" id="detectBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-5 rounded-3xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200 active:scale-95 min-w-[140px]">
+                    <span data-lucide="map-pin" class="w-5 h-5 flex-shrink-0"></span>
+                    <span>Мы нашли ваш IP</span>
+                </button>
+                <button onclick="resetApp()" id="resetBtn"
+                        class="bg-white border-2 border-green-100 hover:bg-green-50 text-green-600 p-5 rounded-3xl transition-all active:scale-95 flex-shrink-0" title="Очистить">
+                    <span data-lucide="eraser" class="w-6 h-6"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Секция с информацией о DNS -->
+    <div id="dnsInfo" class="bg-white rounded-[2.5rem] p-4 md:p-6 custom-shadow border border-blue-100 mb-8 hidden">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="bg-blue-100 p-3 rounded-2xl text-blue-600">
+                <div data-lucide="globe" class="w-6 h-6"></div>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">Ваша сетевая информация</h3>
+                <p class="text-sm text-slate-600">IP: <span id="myIPDisplay" class="font-mono font-bold text-blue-600">—</span></p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-blue-50 p-4 rounded-2xl">
+                <p class="text-xs font-bold text-blue-800 uppercase mb-2">DNS Сервер</p>
+                <p id="dnsServer" class="text-base font-bold text-slate-800 font-mono">—</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-2xl">
+                <p class="text-xs font-bold text-green-800 uppercase mb-2">Провайдер DNS</p>
+                <p id="dnsProvider" class="text-base font-bold text-slate-800">—</p>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-2xl">
+                <p class="text-xs font-bold text-purple-800 uppercase mb-2">Надежность</p>
+                <p id="dnsReliability" class="text-base font-bold text-slate-800">—</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-orange-50 p-4 rounded-2xl">
+                <p class="text-xs font-bold text-orange-800 uppercase mb-2">Тип DNS</p>
+                <p id="dnsType" class="text-base font-bold text-slate-800">—</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-2xl">
+                <p class="text-xs font-bold text-green-800 uppercase mb-2">Точность определения</p>
+                <p id="locationAccuracy" class="text-base font-bold text-slate-800">—</p>
+            </div>
+        </div>
+        
+        <!-- Детальная информация о DNS провайдере -->
+        <div id="dnsDetails" class="mt-4 p-4 bg-slate-50 rounded-2xl hidden">
+            <div class="flex items-center gap-2 mb-3">
+                <div data-lucide="info" class="w-5 h-5 text-slate-600"></div>
+                <h4 class="font-bold text-slate-800">Детальная информация о DNS</h4>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                    <span class="font-semibold text-slate-600">Страна:</span>
+                    <span id="dnsCountry" class="ml-2 text-slate-800">—</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-slate-600">Метод определения:</span>
+                    <span id="dnsMethod" class="ml-2 text-slate-800">—</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-slate-600">Уверенность:</span>
+                    <span id="dnsConfidence" class="ml-2 text-slate-800">—</span>
+                </div>
+                <div>
+                    <span class="font-semibold text-slate-600">Приоритет:</span>
+                    <span id="dnsPriority" class="ml-2 text-slate-800">—</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-4 space-y-6">
+            <div class="bg-white p-6 rounded-[2rem] border border-green-100 shadow-sm">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-green-800 uppercase tracking-widest">Точность данных</span>
+                    <span id="accuracyVal" class="text-green-600 font-extrabold text-lg">0%</span>
+                </div>
+                <div class="w-full bg-green-50 h-3 rounded-full overflow-hidden">
+                    <div id="accuracyBar" class="bg-green-500 h-full accuracy-transition" style="width: 0"></div>
+                </div>
+                <p id="accuracyType" class="text-[11px] text-slate-400 mt-3 font-medium text-center">—</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-white p-6 rounded-3xl border border-green-50 flex items-center gap-4 shadow-sm">
+                    <div class="bg-green-100 p-3 rounded-2xl text-green-600">
+                        <div data-lucide="building"></div>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Провайдер</p>
+                        <p id="resISP" class="text-base font-bold text-slate-800 truncate">—</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-green-50 flex items-center gap-4 shadow-sm">
+                    <div class="bg-blue-100 p-3 rounded-2xl text-blue-600">
+                        <div data-lucide="map-pin"></div>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Город</p>
+                        <p id="resCity" class="text-base font-bold text-slate-800">—</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-green-50 flex items-center gap-4 shadow-sm">
+                    <div class="bg-orange-100 p-3 rounded-2xl text-orange-600">
+                        <div data-lucide="hash"></div>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Координаты</p>
+                        <p id="resCoords" class="text-base font-bold text-slate-800 tracking-tight">—</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-8">
+            <div class="bg-white p-3 rounded-[3rem] shadow-2xl border border-green-100 overflow-hidden relative">
+                <div id="map" class="rounded-[2.2rem]" style="height: 500px; width: 100%; z-index: 1;"></div>
+                <div id="mapLoader" class="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-[1000] hidden transition-opacity">
+                    <div class="flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-3"></div>
+                        <p class="text-sm font-bold text-green-800">Получение данных...</p>
+                    </div>
+                </div>
+                <div id="mapError" class="absolute inset-0 bg-red-50/95 backdrop-blur-sm flex items-center justify-center z-[1000] hidden transition-opacity rounded-[2.2rem]">
+                    <div class="flex flex-col items-center max-w-md mx-auto p-6">
+                        <div class="bg-red-100 p-4 rounded-full mb-4">
+                            <div data-lucide="alert-triangle" class="w-8 h-8 text-red-600"></div>
+                        </div>
+                        <h3 class="text-lg font-bold text-red-800 mb-2">API ключ истёк</h3>
+                        <p class="text-sm text-red-600 text-center mb-4">Карты временно недоступны, но вы можете посмотреть информацию о IP адресе ниже</p>
+                        <button onclick="hideMapError()" class="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 rounded-full transition-all text-sm">
+                            Понятно
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Полностью локальные скрипты -->
+<script src="js/mapgl.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/dns-detector-expanded.js"></script>
+<script src="js/ip-local.js"></script>
 </body>
 </html>

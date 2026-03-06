@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS Database Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border-left: 4px solid #007bff;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .test-section {
+            margin: 20px 0;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .warning {
+            color: #ffc107;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #007bff, #28a745);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .provider-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .provider-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .provider-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .provider-count {
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Проверка и верификация расширенной DNS базы данных</h1>
+        <p>Этот инструмент проверяет точность и реальность сгенерированных DNS серверов.</p>
+        
+        <div class="stats" id="databaseStats">
+            <!-- Статистика будет загружена здесь -->
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📊 Статистика базы данных</h2>
+        <div id="statsContent">
+            <p>Загрузка статистики...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Тестирование DNS серверов</h2>
+        <div class="test-section">
+            <button class="test-button" onclick="testRandomServers()">🎲 Тестировать случайные серверы</button>
+            <button class="test-button" onclick="testMajorProviders()">🏢 Тестировать основных провайдеров</button>
+            <button class="test-button" onclick="testGeographicDistribution()">🌍 Тестировать географическое распределение</button>
+            <button class="test-button" onclick="testAllProviders()">📋 Тестировать всех провайдеров</button>
+        </div>
+        
+        <div class="progress" id="testProgress" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="results" id="testResults" style="display: none;">
+            <!-- Результаты тестов будут здесь -->
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🌍 Распределение по странам</h2>
+        <div id="countryDistribution">
+            <p>Загрузка данных...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🏢 Провайдеры DNS</h2>
+        <div id="providerList">
+            <p>Загрузка данных...</p>
+        </div>
+    </div>
+
+    <script src="js/dns-detector-expanded.js"></script>
+    <script>
+        // Глобальные переменные
+        let dnsDetector;
+        let databaseStats = {};
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            dnsDetector = new DNSDetector();
+            loadDatabaseStats();
+            displayProviderList();
+            displayCountryDistribution();
+        });
+
+        // Загрузка статистики базы данных
+        function loadDatabaseStats() {
+            const db = dnsDetector.dnsDatabase;
+            const stats = {
+                total: Object.keys(db).length,
+                byCountry: {},
+                byType: {},
+                byProvider: {},
+                averageReliability: 0,
+                ipv4Count: 0,
+                ipv6Count: 0
+            };
+
+            let totalReliability = 0;
+
+            Object.values(db).forEach(server => {
+                // Подсчет по странам
+                stats.byCountry[server.country] = (stats.byCountry[server.country] || 0) + 1;
+                
+                // Подсчет по типам
+                stats.byType[server.type] = (stats.byType[server.type] || 0) + 1;
+                
+                // Подсчет по провайдерам
+                stats.byProvider[server.provider] = (stats.byProvider[server.provider] || 0) + 1;
+                
+                // Подсчет надежности
+                totalReliability += server.reliability;
+                
+                // Подсчет IPv4/IPv6
+                const keys = Object.keys(db).find(key => db[key] === server);
+                if (keys.includes(':')) {
+                    stats.ipv6Count++;
+                } else {
+                    stats.ipv4Count++;
+                }
+            });
+
+            stats.averageReliability = (totalReliability / stats.total).toFixed(1);
+            databaseStats = stats;
+
+            // Отображение статистики
+            displayStats(stats);
+        }
+
+        // Отображение статистики
+        function displayStats(stats) {
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.total}</div>
+                    <div class="stat-label">Всего DNS серверов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.ipv4Count}</div>
+                    <div class="stat-label">IPv4 адреса</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.ipv6Count}</div>
+                    <div class="stat-label">IPv6 адреса</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.averageReliability}%</div>
+                    <div class="stat-label">Средняя надежность</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${Object.keys(stats.byProvider).length}</div>
+                    <div class="stat-label">Провайдеры</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${Object.keys(stats.byCountry).length}</div>
+                    <div class="stat-label">Страны</div>
+                </div>
+            `;
+            
+            document.getElementById('databaseStats').innerHTML = statsHtml;
+
+            // Детальная статистика
+            const statsContent = `
+                <h3>Расширение базы данных</h3>
+                <p><strong>Исходный размер:</strong> 148 записей</p>
+                <p><strong>Текущий размер:</strong> ${stats.total} записей</p>
+                <p><strong>Коэффициент расширения:</strong> ${(stats.total / 148).toFixed(1)}x</p>
+                
+                <h3>Распределение по типам</h3>
+                ${Object.entries(stats.byType).map(([type, count]) => 
+                    `<p><strong>${type}:</strong> ${count} (${(count/stats.total*100).toFixed(1)}%)</p>`
+                ).join('')}
+                
+                <h3>Топ-10 провайдеров</h3>
+                ${Object.entries(stats.byProvider)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 10)
+                    .map(([provider, count]) => 
+                        `<p><strong>${provider}:</strong> ${count} серверов</p>`
+                    ).join('')}
+            `;
+            
+            document.getElementById('statsContent').innerHTML = statsContent;
+        }
+
+        // Отображение списка провайдеров
+        function displayProviderList() {
+            const providers = Object.entries(databaseStats.byProvider)
+                .sort(([,a], [,b]) => b - a);
+            
+            const providerHtml = providers.map(([provider, count]) => `
+                <div class="provider-item">
+                    <div class="provider-name">${provider}</div>
+                    <div class="provider-count">${count} DNS серверов</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('providerList').innerHTML = `
+                <div class="provider-list">
+                    ${providerHtml}
+                </div>
+                <p><strong>Всего провайдеров:</strong> ${providers.length}</p>
+            `;
+        }
+
+        // Отображение распределения по странам
+        function displayCountryDistribution() {
+            const countries = Object.entries(databaseStats.byCountry)
+                .sort(([,a], [,b]) => b - a);
+            
+            const countryHtml = countries.map(([country, count]) => 
+                `<tr>
+                    <td>${country}</td>
+                    <td>${count}</td>
+                    <td>${(count/databaseStats.total*100).toFixed(1)}%</td>
+                </tr>`
+            ).join('');
+            
+            document.getElementById('countryDistribution').innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Страна</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Количество DNS</th>
+                            <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Процент</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${countryHtml}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Тестирование случайных серверов
+        async function testRandomServers() {
+            const testCount = 20;
+            const servers = Object.keys(dnsDetector.dnsDatabase);
+            const randomServers = [];
+            
+            for (let i = 0; i < testCount; i++) {
+                const randomIndex = Math.floor(Math.random() * servers.length);
+                randomServers.push(servers[randomIndex]);
+            }
+            
+            await testServers(randomServers, 'Случайные DNS серверы');
+        }
+
+        // Тестирование основных провайдеров
+        async function testMajorProviders() {
+            const majorProviders = ['Google', 'Cloudflare', 'Quad9', 'OpenDNS', 'Yandex', 'AdGuard'];
+            const testServers = [];
+            
+            majorProviders.forEach(provider => {
+                const providerServers = dnsDetector.reverseLookup[provider] || [];
+                if (providerServers.length > 0) {
+                    testServers.push(providerServers[0]); // Берем первый сервер каждого провайдера
+                }
+            });
+            
+            await testServers(testServers, 'Основные провайдеры DNS');
+        }
+
+        // Тестирование географического распределения
+        async function testGeographicDistribution() {
+            const testServers = [];
+            const countries = ['US', 'RU', 'DE', 'FR', 'GB', 'CA', 'AU', 'JP', 'CN', 'BR'];
+            
+            countries.forEach(country => {
+                const servers = Object.entries(dnsDetector.dnsDatabase)
+                    .filter(([, info]) => info.country === country)
+                    .map(([ip]) => ip);
+                
+                if (servers.length > 0) {
+                    testServers.push(servers[0]);
+                }
+            });
+            
+            await testServers(testServers, 'Географическое распределение');
+        }
+
+        // Тестирование всех провайдеров
+        async function testAllProviders() {
+            const testServers = [];
+            const providers = Object.keys(dnsDetector.reverseLookup);
+            
+            providers.forEach(provider => {
+                const providerServers = dnsDetector.reverseLookup[provider] || [];
+                if (providerServers.length > 0) {
+                    testServers.push(providerServers[0]);
+                }
+            });
+            
+            await testServers(testServers, 'Все провайдеры');
+        }
+
+        // Основная функция тестирования серверов
+        async function testServers(servers, testName) {
+            const resultsDiv = document.getElementById('testResults');
+            const progressDiv = document.getElementById('testProgress');
+            const progressBar = document.getElementById('progressBar');
+            
+            resultsDiv.style.display = 'block';
+            progressDiv.style.display = 'block';
+            resultsDiv.innerHTML = `<h3>🧪 ${testName}</h3><p>Начало тестирования...</p>`;
+            
+            let results = [];
+            let completed = 0;
+            
+            for (const server of servers) {
+                try {
+                    progressBar.style.width = `${(completed / servers.length) * 100}%`;
+                    
+                    const result = await testDNSServer(server);
+                    results.push(result);
+                    
+                    completed++;
+                    const status = result.success ? '✅' : '❌';
+                    resultsDiv.innerHTML += `<p>${status} ${server}: ${result.message}</p>`;
+                    
+                    // Небольшая задержка для визуализации прогресса
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                } catch (error) {
+                    results.push({ server, success: false, message: error.message });
+                    resultsDiv.innerHTML += `<p>❌ ${server}: Ошибка тестирования</p>`;
+                }
+            }
+            
+            progressBar.style.width = '100%';
+            
+            // Итоговая статистика
+            const successCount = results.filter(r => r.success).length;
+            const failureCount = results.length - successCount;
+            
+            resultsDiv.innerHTML += `
+                <hr>
+                <h3>📊 Результаты тестирования</h3>
+                <p><strong>Всего протестировано:</strong> ${results.length} серверов</p>
+                <p class="success"><strong>Успешно:</strong> ${successCount} (${(successCount/results.length*100).toFixed(1)}%)</p>
+                <p class="error"><strong>Неудачно:</strong> ${failureCount} (${(failureCount/results.length*100).toFixed(1)}%)</p>
+                <p><strong>Точность базы данных:</strong> ${(successCount/results.length*100).toFixed(1)}%</p>
+            `;
+            
+            setTimeout(() => {
+                progressDiv.style.display = 'none';
+            }, 2000);
+        }
+
+        // Тестирование отдельного DNS сервера
+        async function testDNSServer(ip) {
+            try {
+                // Проверяем наличие в базе данных
+                const dbEntry = dnsDetector.dnsDatabase[ip];
+                if (!dbEntry) {
+                    return { 
+                        server: ip, 
+                        success: false, 
+                        message: 'Не найден в базе данных' 
+                    };
+                }
+                
+                // Проверяем валидность IP адреса
+                if (!isValidIPAddress(ip)) {
+                    return { 
+                        server: ip, 
+                        success: false, 
+                        message: 'Невалидный IP адрес' 
+                    };
+                }
+                
+                // Проверяем структуру записи
+                if (!dbEntry.provider || !dbEntry.country || !dbEntry.type) {
+                    return { 
+                        server: ip, 
+                        success: false, 
+                        message: 'Неполная запись в базе данных' 
+                    };
+                }
+                
+                // Проверяем надежность
+                if (dbEntry.reliability < 85 || dbEntry.reliability > 100) {
+                    return { 
+                        server: ip, 
+                        success: false, 
+                        message: `Недопустимая надежность: ${dbEntry.reliability}%` 
+                    };
+                }
+                
+                // Пытаемся определить провайдера через детектор
+                const detected = dnsDetector.detectDNSProvider(ip);
+                
+                return { 
+                    server: ip, 
+                    success: true, 
+                    message: `${dbEntry.provider} (${dbEntry.country}, ${dbEntry.type}, ${dbEntry.reliability}%)` 
+                };
+                
+            } catch (error) {
+                return { 
+                    server: ip, 
+                    success: false, 
+                    message: `Ошибка: ${error.message}` 
+                };
+            }
+        }
+
+        // Проверка валидности IP адреса
+        function isValidIPAddress(ip) {
+            // IPv4 проверка
+            const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            if (ipv4Regex.test(ip)) return true;
+            
+            // IPv6 проверка (упрощенная)
+            const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+            const ipv6Regex2 = /^(?:[0-9a-fA-F]{1,4}:){1,7}:$/;
+            const ipv6Regex3 = /^::(?:[0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}$/;
+            
+            return ipv6Regex.test(ip) || ipv6Regex2.test(ip) || ipv6Regex3.test(ip);
+        }
+    </script>
+</body>
+</html>
