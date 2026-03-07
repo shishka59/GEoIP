@@ -316,14 +316,14 @@ button:disabled:hover {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.glass-button:hover {
-    background: rgba(255, 255, 255, 0.6) !important;
-    box-shadow: 0 4px 12px -1px rgba(40, 167, 69, 0.2) !important;
-    transform: scale(1.1) !important;
+#clearInputBtn:hover {
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 12px -1px rgba(40, 167, 69, 0.2);
+    transform: translateY(-50%) scale(1.1);
 }
 
-.glass-button:active {
-    transform: scale(0.95) !important;
+#clearInputBtn:active {
+    transform: translateY(-50%) scale(0.95);
 }
 
 /* Управление видимостью кнопки очистки */

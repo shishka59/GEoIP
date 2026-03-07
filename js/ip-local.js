@@ -692,6 +692,9 @@ document.addEventListener('DOMContentLoaded', function() {
         ipInput.addEventListener('blur', () => {
             ipInput.parentElement.classList.remove('ring-2', 'ring-green-500', 'ring-offset-2');
         });
+
+        // Initial check for clear button visibility
+        toggleClearBtn();
     }
     
     // Добавляем плавное появление для DNS информации
