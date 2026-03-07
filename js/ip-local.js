@@ -241,7 +241,11 @@ async function detectMyIP() {
         updateDNSProviderInfo(dns);
         
         // Автоматически ищем локацию для своего IP
-        document.getElementById('ipInput').value = myIP;
+        const ipInput = document.getElementById('ipInput');
+        ipInput.value = myIP;
+        const clearBtn = document.getElementById('clearInputBtn');
+        if (clearBtn) clearBtn.classList.add('visible');
+
         await lookupIP();
         
         // Обновляем точность на основе DNS
@@ -564,7 +568,12 @@ function resetApp() {
         return;
     }
     
-    document.getElementById('ipInput').value = '';
+    const ipInput = document.getElementById('ipInput');
+    const clearBtn = document.getElementById('clearInputBtn');
+
+    ipInput.value = '';
+    if (clearBtn) clearBtn.classList.remove('visible');
+
     document.getElementById('resISP').innerText = '—';
     document.getElementById('resCity').innerText = '—';
     document.getElementById('resCoords').innerText = '—';
@@ -612,12 +621,32 @@ function hideMapError() {
 // Обработчики событий
 document.addEventListener('DOMContentLoaded', function() {
     const ipInput = document.getElementById('ipInput');
+    const clearBtn = document.getElementById('clearInputBtn');
+
     if (ipInput) {
+        // Управление кнопкой очистки
+        const toggleClearBtn = () => {
+            if (ipInput.value.length > 0) {
+                clearBtn.classList.add('visible');
+            } else {
+                clearBtn.classList.remove('visible');
+            }
+        };
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                resetApp();
+                ipInput.focus();
+            });
+        }
+
         // Валидация при вводе с debounce
         let validationTimeout;
         ipInput.addEventListener('input', (e) => {
             const value = e.target.value.trim();
             
+            toggleClearBtn();
+
             // Скрываем ошибку если пользователь начинает вводить
             if (value.length > 0) {
                 hideValidationError(ipInput);
@@ -663,6 +692,9 @@ document.addEventListener('DOMContentLoaded', function() {
         ipInput.addEventListener('blur', () => {
             ipInput.parentElement.classList.remove('ring-2', 'ring-green-500', 'ring-offset-2');
         });
+
+        // Initial check for clear button visibility
+        toggleClearBtn();
     }
     
     // Добавляем плавное появление для DNS информации

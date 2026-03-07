@@ -264,8 +264,8 @@ button:disabled:hover {
 
 .transition-opacity {
     transition-property: opacity;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
+    transition-timing-function: ease-in-out;
+    transition-duration: 200ms;
 }
 
 .duration-300 {
@@ -305,4 +305,33 @@ button:disabled:hover {
 /* Корректировка положения иконки относительно контура */
 #ipInput:focus ~ .search-icon {
     left: 22px;
+}
+
+/* Glassmorphism для кнопки очистки */
+.glass-button {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+#clearInputBtn:hover {
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 12px -1px rgba(40, 167, 69, 0.2);
+    transform: translateY(-50%) scale(1.1);
+}
+
+#clearInputBtn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* Управление видимостью кнопки очистки */
+#clearInputBtn.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#clearInputBtn {
+    transition: opacity 0.2s ease-in-out, background 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
